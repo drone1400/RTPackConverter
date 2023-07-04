@@ -1,15 +1,19 @@
 ﻿using System;
 using System.IO;
-using System.Drawing;
+
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 
 using static RTPackConverter.Utils;
 using static RTPackConverter.Constants;
 
+using Color = System.Drawing.Color;
+
 namespace RTPackConverter
 {
-    class RTTEX
+    class RTTEX : IDisposable
     {
-        public Bitmap texture;
+        public Image<Rgba32> texture;
         public int Height;
         public int Width;
         public GL_FORMATS format;
@@ -58,24 +62,31 @@ namespace RTPackConverter
             bdr.BaseStream.Seek(24, SeekOrigin.Current);
 
             Log($"{Program.currentFileName} --> {Path.GetFileNameWithoutExtension(Program.currentFileName)}.png", Color.Green);
-            DirectBitmap texture = new DirectBitmap(Width, Height);
+            Image<Rgba32> texture = new Image<Rgba32>(Width, Height);
             for (int y = Height - 1; y >= 0; y--)
             {
                 for (int x = 0; x < Width; x++)
                 {
+                    byte R = bdr.ReadByte();
+                    byte G = bdr.ReadByte();
+                    byte B = bdr.ReadByte();
+                    byte A = 0xFF;
                     if (UsesAlpha)
                     {
-                        texture.Bits[x + y * Width] = (bdr.ReadByte() << 16 | bdr.ReadByte() << 8 | bdr.ReadByte() | bdr.ReadByte() << 24);
+                        A = bdr.ReadByte();
                     }
-                    else
-                    {
-                        texture.Bits[x + y * Width] = (bdr.ReadByte() << 16 | bdr.ReadByte() << 8 | bdr.ReadByte() | -16777216);
-                    }
+                    Rgba32 rgba32 = new Rgba32(R, G, B, A);
+                    texture[x, y] = rgba32;
                 }
 
             }
             bdr.Dispose();
-            this.texture = texture.Bitmap;
+            this.texture = texture;
+        }
+
+        public void Dispose()
+        {
+            texture.Dispose();
         }
     }
 }

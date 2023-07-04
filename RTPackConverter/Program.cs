@@ -5,6 +5,8 @@ using System.Linq;
 using System.IO;
 using System.IO.Compression;
 
+using SixLabors.ImageSharp.Formats.Png;
+
 using Console = Colorful.Console;
 
 using static RTPackConverter.Utils;
@@ -85,108 +87,116 @@ namespace RTPackConverter
         /// <returns></returns>
         static void ConvertRTPACKFile(string filename)
         {
-            using (FileStream fs = new FileStream(filename, FileMode.Open))
+            using FileStream fs = new FileStream(filename, FileMode.Open);
+            using BinaryReader br = new BinaryReader(fs);
+
+            /*
+             * Main File Header.
+             * - RTTXTR -> Texture File.
+             * - RTFONT -> Font File.
+             * - RTPACK -> One of them, recompressed after output. (RTPack.exe ".rtfont/.rttex")
+             * 
+             * */
+            string rtpack_magic = new string(br.ReadChars(6));
+            if (String.Equals(rtpack_magic, "RTTXTR"))
             {
-                BinaryReader br = new BinaryReader(fs);
+                Log("Uncompressed texture file detected.", Color.LimeGreen);
+                string? dirName = Path.GetDirectoryName(filename);
+                string fileNoEx = Path.GetFileNameWithoutExtension(filename);
+                string outPath = dirName != null ? Path.Combine(dirName, $"{fileNoEx}.png") : $"{fileNoEx}.png";
+                using FileStream outfs = new FileStream(outPath, FileMode.Create, FileAccess.ReadWrite);
+                using RTTEX texture = new RTTEX(br);
+                texture.texture.Save(outfs, new PngEncoder());
+            }
+            else if (String.Equals(rtpack_magic, "RTFONT"))
+            {
+                Log("Uncompressed font file detected.", Color.LimeGreen);
+                string? dirName = Path.GetDirectoryName(filename);
+                string fileNoEx = Path.GetFileNameWithoutExtension(filename);
+                string outPath = dirName != null ? Path.Combine(dirName, $"{fileNoEx}.png") : $"{fileNoEx}.png";
+                using FileStream outfs = new FileStream(outPath, FileMode.Create, FileAccess.ReadWrite);
+                using RTFONT font = new RTFONT(br);
+                font.fontBitmap.texture.Save(outfs, new PngEncoder());
 
-                /*
-                 * Main File Header.
-                 * - RTTXTR -> Texture File.
-                 * - RTFONT -> Font File.
-                 * - RTPACK -> One of them, recompressed after output. (RTPack.exe ".rtfont/.rttex")
-                 * 
-                 * */
-                string rtpack_magic = new string(br.ReadChars(6));
-                if (String.Equals(rtpack_magic, "RTTXTR"))
+                Log("Extracting all characters.", Color.LimeGreen);
+                font.ExtractCharacters(filename);
+            }
+            else if (String.Equals(rtpack_magic, "RTPACK"))
+            {
+                byte version = br.ReadByte();
+                byte reserved = br.ReadByte();
+
+                //RTPACK Header (24 bytes)
+                uint compressedSize = br.ReadUInt32();
+                Log($"-> Compressed Size : {BytesToString(compressedSize)}", Color.Orange);
+                uint decompressedSize = br.ReadUInt32();
+                Log($"-> Decompressed Size : {BytesToString(decompressedSize)}", Color.Orange);
+
+                eCompressionType compressionType = (eCompressionType)br.ReadByte();
+                Log($"-> Compression Type : {compressionType}", Color.Orange);
+
+                fs.Seek(15, SeekOrigin.Current);
+
+                //Zlib Magic header (78 9C), IO.Compression doesn't want it for deflate so just skip it
+                fs.ReadByte();
+                fs.ReadByte();
+
+                //RTFONT Header
+                using MemoryStream ms = new MemoryStream();
+
+                if (compressionType == eCompressionType.C_COMPRESSION_ZLIB)
                 {
-                    Log("Uncompressed texture file detected.", Color.LimeGreen);
-                    new RTTEX(br).texture.Save($@"{Path.GetDirectoryName(filename)}\{Path.GetFileNameWithoutExtension(filename)}.png");
-                }
-                else if (String.Equals(rtpack_magic, "RTFONT"))
-                {
-                    Log("Uncompressed font file detected.", Color.LimeGreen);
-                    RTFONT font = new RTFONT(br);
-                    font.fontBitmap.texture.Save($@"{Path.GetDirectoryName(filename)}\{Path.GetFileNameWithoutExtension(filename)}.png");
-                    Log("Extracting all characters.", Color.LimeGreen);
-                    font.ExtractCharacters(filename);
-                }
-                else if (String.Equals(rtpack_magic, "RTPACK"))
-                {
-                    byte version = br.ReadByte();
-                    byte reserved = br.ReadByte();
+                    Log("Decompressing..", Color.Yellow);
+                    using DeflateStream zs = new DeflateStream(fs, CompressionMode.Decompress);
+                    zs.CopyTo(ms);
+                    ms.Position = 0;
 
-                    //RTPACK Header (24 bytes)
-                    uint compressedSize = br.ReadUInt32();
-                    Log($"-> Compressed Size : {BytesToString(compressedSize)}", Color.Orange);
-                    uint decompressedSize = br.ReadUInt32();
-                    Log($"-> Decompressed Size : {BytesToString(decompressedSize)}", Color.Orange);
-
-                    eCompressionType compressionType = (eCompressionType)br.ReadByte();
-                    Log($"-> Compression Type : {compressionType}", Color.Orange);
-
-                    fs.Seek(15, SeekOrigin.Current);
-
-                    //Zlib Magic header (78 9C), IO.Compression doesn't want it for deflate so just skip it
-                    fs.ReadByte();
-                    fs.ReadByte();
-
-                    //RTFONT Header
-                    using (MemoryStream ms = new MemoryStream())
-                    {
-                        if (compressionType == eCompressionType.C_COMPRESSION_ZLIB)
-                        {
-                            Log("Decompressing..", Color.Yellow);
-                            using (DeflateStream zs = new DeflateStream(fs, CompressionMode.Decompress))
-                            {
-
-                                zs.CopyTo(ms);
-                            }
-                            ms.Position = 0;
-
-                            //Decompress and save file
+                    //Decompress and save file
 #if DEBUG
-                            using (FileStream file = new FileStream(Path.GetFileNameWithoutExtension(filename) + ".rtpack", FileMode.Create))
-                            {
-                                ms.CopyTo(file);
-                                ms.Position = 0;
-                            }
+                    using FileStream file = new FileStream(Path.GetFileNameWithoutExtension(filename) + ".rtpack", FileMode.Create);
+                    ms.CopyTo(file);
+                    ms.Position = 0;
 #endif
-
-                        }
-                        else
-                        {
-                            fs.CopyTo(ms);
-                            ms.Position = 0;
-                        }
-
-                        Log("Loaded onto memory.");
-                        BinaryReader bdr = new BinaryReader(ms);
-
-                        //RTFile Header again (8 bytes)
-                        string decomp_magic = new string(bdr.ReadChars(6));
-                        if (String.Equals(decomp_magic, "RTTXTR"))
-                        {
-                            Log("Texture file detected. (RTTXTR/rttex)", Color.LimeGreen);
-                            new RTTEX(bdr).texture.Save($@"{Path.GetDirectoryName(filename)}\{Path.GetFileNameWithoutExtension(filename)}.png");
-                        }
-                        else if (String.Equals(decomp_magic, "RTFONT"))
-                        {
-                            Log("Font detected. (RTFONT/rtfont)", Color.LimeGreen);
-                            RTFONT font = new RTFONT(bdr);
-                            font.fontBitmap.texture.Save($@"{Path.GetDirectoryName(filename)}\{Path.GetFileNameWithoutExtension(filename)}.png");
-                            Log("Extracting all characters.", Color.LimeGreen);
-                            font.ExtractCharacters(filename);
-                        }
-                    }
                 }
                 else
                 {
-                    throw new FileFormatException("Not a RTPACK file.");
+                    fs.CopyTo(ms);
+                    ms.Position = 0;
                 }
+
+                Log("Loaded onto memory.");
+                using BinaryReader bdr = new BinaryReader(ms);
+
+                //RTFile Header again (8 bytes)
+                string decomp_magic = new string(bdr.ReadChars(6));
+                if (String.Equals(decomp_magic, "RTTXTR"))
+                {
+                    Log("Texture file detected. (RTTXTR/rttex)", Color.LimeGreen);
+                    string? dirName = Path.GetDirectoryName(filename);
+                    string fileNoEx = Path.GetFileNameWithoutExtension(filename);
+                    string outPath = dirName != null ? Path.Combine(dirName, $"{fileNoEx}.png") : $"{fileNoEx}.png";
+                    using FileStream outfs = new FileStream(outPath, FileMode.Create, FileAccess.ReadWrite);
+                    using RTTEX texture = new RTTEX(bdr);
+                    texture.texture.Save(outfs, new PngEncoder());
+                }
+                else if (String.Equals(decomp_magic, "RTFONT"))
+                {
+                    Log("Font detected. (RTFONT/rtfont)", Color.LimeGreen);
+                    string? dirName = Path.GetDirectoryName(filename);
+                    string fileNoEx = Path.GetFileNameWithoutExtension(filename);
+                    string outPath = dirName != null ? Path.Combine(dirName, $"{fileNoEx}.png") : $"{fileNoEx}.png";
+                    using FileStream outfs = new FileStream(outPath, FileMode.Create, FileAccess.ReadWrite);
+                    using RTFONT font = new RTFONT(bdr);
+                    font.fontBitmap.texture.Save(outfs, new PngEncoder());
+
+                    Log("Extracting all characters.", Color.LimeGreen);
+                    font.ExtractCharacters(filename);
+                }
+            }
+            else
+            {
+                throw new FileFormatException("Not a RTPACK file.");
             }
         }
     }
 }
-
-
-

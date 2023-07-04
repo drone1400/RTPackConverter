@@ -1,14 +1,20 @@
-﻿using System.Collections.Generic;
-using System.Drawing;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using System;
+
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Png;
+using SixLabors.ImageSharp.PixelFormats;
 
 using static RTPackConverter.Utils;
 
+using Color = System.Drawing.Color;
+using Rectangle = System.Drawing.Rectangle;
+
 namespace RTPackConverter
 {
-    class RTFONT
+    class RTFONT : IDisposable
     {
         public short charSpacing;
         public short lineHeight;
@@ -98,20 +104,33 @@ namespace RTPackConverter
         {
             string charsPath = Path.Combine(Path.GetDirectoryName(fullPath), Path.GetFileNameWithoutExtension(fullPath));
             Directory.CreateDirectory(charsPath);
-            int i = 1;
+            int charIndex = 1;
             foreach (var character in charList)
             {
                 if (character.charSizeX == 0 && character.charSizeY == 0) continue;
 
-                i++;
+                charIndex++;
                 Rectangle charRect = new Rectangle(character.bmpPosX, character.bmpPosY,
                     character.charSizeX, character.charSizeY);
 
-                var charBmp = fontBitmap.texture.Clone(charRect, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                charBmp.Save(charsPath + "\\" + i + ".png");
-
-                charBmp.Dispose();
+                string outPath = Path.Combine(charsPath, $"{charIndex}.png");
+                using FileStream outfs = new FileStream(outPath, FileMode.Create, FileAccess.ReadWrite);
+                using Image<Rgba32> charTexture = new Image<Rgba32>(character.charSizeX, character.charSizeY);
+                
+                for (int dstX = 0, srcX = character.bmpPosX; dstX < character.charSizeX; dstX++, srcX++)
+                {
+                    for (int dstY = 0, srcY = character.bmpPosY; dstY < character.charSizeY; dstY++, srcY++)
+                    {
+                        charTexture[dstX, dstY] = fontBitmap.texture[srcX, srcY];
+                    }
+                }
+                charTexture.Save(outfs, new PngEncoder());
             }
+        }
+
+        public void Dispose()
+        {
+            fontBitmap.Dispose();
         }
     }
 
