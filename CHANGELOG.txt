@@ -1,0 +1,16 @@
+---- V2.0.4 ----
+- Fixed issue with CI/CD not publishing linux/mac releases correctly, for real this time
+
+---- V2.0.3 ----
+- Attempted once more to fix issue with CI/CD not publishing linux/mac releases correctly
+
+---- V2.0.2 ----
+- Attempted to fix issue with CI/CD not publishing linux/mac releases correctly
+- Updated SixLabors.ImageSharp package version
+
+---- V2.0.1 ----
+- Updated to .NET8
+- Added osx-arm64 to CI/CD releases
+
+---- V2.0.0 ----
+- Initial .NET7 port of Nenkai's RTPackConverter project 
