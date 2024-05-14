@@ -58,7 +58,7 @@ jobs:
       - name: Clean before publish
         run: dotnet clean ./RTPackConverter.sln --configuration Release -p:Platform="Any CPU" --framework net8.0
       - name: Publish net8.0 win-x64
-        run: publish ./RTPackConverter.sln --output ./publish/net8.0_win-x64/RTPackConverter/ --configuration Release -p:Platform="Any CPU" --framework net8.0 --runtime win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+        run: dotnet publish ./RTPackConverter.sln --output ./publish/net8.0_win-x64/RTPackConverter/ --configuration Release -p:Platform="Any CPU" --framework net8.0 --runtime win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
       - name: Archive published net8.0 win-x64
         uses: ihiroky/archive-action@v1
         with:
@@ -82,7 +82,7 @@ jobs:
       - name: Clean before publish
         run: dotnet clean ./RTPackConverter.sln --configuration Release -p:Platform="Any CPU" --framework net8.0
       - name: Publish net8.0 osx-x64
-        run: publish ./RTPackConverter.sln --output ./publish/net8.0_osx-x64/RTPackConverter/ --configuration Release -p:Platform="Any CPU" --framework net8.0 --runtime osx-x64 --self-contained true -p:PublishSingleFile=true
+        run: dotnet publish ./RTPackConverter.sln --output ./publish/net8.0_osx-x64/RTPackConverter/ --configuration Release -p:Platform="Any CPU" --framework net8.0 --runtime osx-x64 --self-contained true -p:PublishSingleFile=true
       - name: Archive published net8.0 osx-x64
         uses: ihiroky/archive-action@v1
         with:
