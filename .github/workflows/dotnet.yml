@@ -67,7 +67,7 @@ jobs:
 # ---- Publish and archive - net8.0 Linux x64
 
       - name: Publish net8.0 linux-x64
-        run: dotnet publish ./RTPackConverter/RTPackConverter.csproj --output ./publish/net8.0_linux-x64/RTPackConverter/ --configuration Release --framework net8.0 --self-contained true --runtime linux-x64 -p:PublishSingleFile=true -p:Platform="x64"
+        run: dotnet publish ./RTPackConverter/RTPackConverter.csproj --output ./publish/net8.0_linux-x64/RTPackConverter/ --configuration Release --framework net8.0 --self-contained true --runtime linux-x64 -p:PublishSingleFile=true -p:Platform="Any CPU"
       - name: Archive published net8.0 linux-x64
         uses: ihiroky/archive-action@v1
         with:

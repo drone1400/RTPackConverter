@@ -4,7 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <TrimMode>copyused</TrimMode>
-    <Version>2.0.2</Version>
+    <Version>2.0.3</Version>
     <RootNamespace>RTPackConverter</RootNamespace>
     <AssemblyName>RTPackConverter</AssemblyName>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
