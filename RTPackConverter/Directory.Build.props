@@ -1,5 +1,5 @@
 <Project>
     <PropertyGroup>
-        <MSBUildProjectExtensionsPath>..\output.MsBuildProps\RTPackConverter\</MSBUildProjectExtensionsPath>
+        <MSBUildProjectExtensionsPath>..\output.MsBuildProps\$(Configuration)_$(Platform)\RTPackConverter\</MSBUildProjectExtensionsPath>
     </PropertyGroup>
 </Project>

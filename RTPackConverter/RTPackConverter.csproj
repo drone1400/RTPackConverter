@@ -4,7 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <TrimMode>copyused</TrimMode>
-    <Version>2.0.3</Version>
+    <Version>2.0.4</Version>
     <RootNamespace>RTPackConverter</RootNamespace>
     <AssemblyName>RTPackConverter</AssemblyName>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -17,8 +17,8 @@
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
 
     <BaseIntermediateOutputPath>..\output.obj\</BaseIntermediateOutputPath>
-    <IntermediateOutputPath>..\output.obj\$(TargetFramework)_$(Configuration)_$(Platform)_$(OS)\RTPackConverter\</IntermediateOutputPath>
-    <OutputPath>..\output\$(TargetFramework)_$(Configuration)_$(Platform)_$(OS)\RTPackConverter\</OutputPath>
+    <IntermediateOutputPath>..\output.obj\$(TargetFramework)_$(Configuration)_$(Platform)\RTPackConverter\</IntermediateOutputPath>
+    <OutputPath>..\output\$(TargetFramework)_$(Configuration)_$(Platform)\RTPackConverter\</OutputPath>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>  
   
